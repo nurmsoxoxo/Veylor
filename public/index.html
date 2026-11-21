@@ -12,7 +12,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 h1,h2,h3{font-family:Alfredo,"Iowan Old Style",Georgia,serif;font-weight:600;margin:0}
-#app{max-width:480px;margin:0 auto;min-height:100vh;padding:20px 18px 96px}
+#app{max-width:480px;margin:0 auto;min-height:100vh;padding:96px 18px 110px}
 .card{background:var(--bg2);border:1px solid var(--b);border-radius:18px;padding:16px;margin:12px 0}
 button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:13px 18px;background:var(--p);color:#fff;transition:transform .1s,background .2s}
 button:active{transform:scale(.97)}button:hover{background:var(--a)}
@@ -21,15 +21,15 @@ button.sm{padding:8px 12px;font-size:14px}button.w{width:100%}
 input,textarea,select{width:100%;font:inherit;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:12px;padding:12px;margin:6px 0 10px}
 input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--a);outline-offset:2px}
 label{color:var(--t2);font-size:14px}.mut{color:var(--t2);font-size:14px}.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav{position:fixed;left:0;right:0;top:0;z-index:5;background:var(--bg2);border-bottom:1px solid var(--b);padding-top:env(safe-area-inset-top,0px)}
 nav div{max-width:480px;margin:0 auto;display:flex}nav button{flex:1;background:none;border-radius:0;color:var(--t2);padding:12px 0;font-size:13px}
-nav button.on{color:var(--t);box-shadow:inset 0 2px 0 var(--a)}
+nav button.on{color:var(--t);box-shadow:inset 0 -2px 0 var(--a)}
 .badge{background:var(--p);border-radius:99px;padding:1px 8px;font-size:12px}
 .sms{background:#fff;color:#111;border-radius:16px;padding:14px;font-size:14px;white-space:pre-wrap}
 .warn{border-left:3px solid #e8b44a;background:#1d2336;padding:10px 12px;border-radius:8px;font-size:14px;color:var(--t2)}
 .bub{max-width:80%;padding:9px 13px;border-radius:16px;margin:5px 0;animation:in .2s}.me{background:var(--p);margin-left:auto}.th{background:var(--bg2);border:1px solid var(--b)}
 @keyframes in{from{opacity:0;transform:translateY(6px)}}
-#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:10px 16px;z-index:9;max-width:90%}
+#toast{position:fixed;top:calc(96px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:10px 16px;z-index:9;max-width:90%}
 .splash{display:grid;place-items:center;min-height:70vh;text-align:center}.logo{animation:pop 1s ease both}@keyframes pop{from{opacity:0;transform:scale(.8)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
@@ -54,7 +54,7 @@ function validPhone(cc,n){const d=n.replace(/[\s\-().]/g,'');if(!/^\d{6,12}$/.te
 const V={
 welcome:()=>`<div class="splash"><div><div class="logo">${LOGO(96)}</div><h1 style="font-size:44px;margin-top:10px;letter-spacing:.04em">Veylo</h1><p style="font-size:20px;font-family:Georgia,serif">Say what you feel. Stay unknown.</p><p class="mut">Send an anonymous message to a phone number. If they're curious, the conversation continues privately inside Veylo.</p><button class="w" data-go="register">Get started</button><br><br><button class="w g" data-go="login">Log in</button></div></div>`,
 register:()=>`<h2>Create your account</h2><p class="mut">Veylo is for adults aged 18+.</p><form id="reg"><label>Username<input name="u" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+" placeholder="${rid()}"></label><label>Email<input name="e" type="email" required></label><label>Password<input name="p" type="password" required minlength="10"></label><label>Confirm password<input name="p2" type="password" required></label><label>Date of birth<input name="d" type="date" required></label><label class="row"><input type="checkbox" name="t" required style="width:auto"> I accept the Terms and Privacy Policy</label><button class="w">Create account</button></form><p class="mut">Already registered? <a href="#" data-go="login" style="color:var(--a)">Log in</a></p><div class="warn">Your account is created and you are logged in straight away. Google sign-in, phone verification and 2FA are not set up yet.</div>`,
-login:()=>`<h2>Welcome back</h2><form id="log"><label>Email<input name="u" type="email" required autocomplete="email" inputmode="email"></label><label>Password<input name="p" type="password" required autocomplete="current-password"></label><label class="row"><input type="checkbox" style="width:auto" onchange="this.form.p.type=this.checked?'text':'password'"> Show password</label><button class="w">Log in</button><br><br><button type="button" class="w g" id="magic">Email me a login link instead</button></form><p class="mut" style="text-align:center">Build 4</p><p class="mut"><a href="#" data-go="register" style="color:var(--a)">Create account</a> · <a href="#" id="forgot" style="color:var(--a)">Forgot password?</a></p>`,
+login:()=>`<h2>Welcome back</h2><form id="log"><label>Email<input name="u" type="email" required autocomplete="email" inputmode="email"></label><label>Password<input name="p" type="password" required autocomplete="current-password"></label><label class="row"><input type="checkbox" style="width:auto" onchange="this.form.p.type=this.checked?'text':'password'"> Show password</label><button class="w">Log in</button><br><br><button type="button" class="w g" id="magic">Email me a login link instead</button></form><p class="mut" style="text-align:center">Build 5</p><p class="mut"><a href="#" data-go="register" style="color:var(--a)">Create account</a> · <a href="#" id="forgot" style="color:var(--a)">Forgot password?</a></p>`,
 home:()=>`<div class="row sp"><div><span class="mut">Welcome back,</span><h2>${esc(S.user.name)}</h2></div><div>🔔 ${unread()?`<span class="badge">${unread()}</span>`:''}</div></div>
 <div class="row"><div class="card" style="flex:1"><h3>${unread()}</h3><span class="mut">Unread</span></div><div class="card" style="flex:1"><h3>${S.chats.length}</h3><span class="mut">Conversations</span></div></div>
 <button class="w" data-go="send" data-tab="send">Send anonymous message</button>
