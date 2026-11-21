@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veylo</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#080F24">
+<style>
+:root{--bg:#080F24;--bg2:#111C35;--p:#315BEA;--a:#6385FF;--t:#F5F7FF;--t2:#A0ADC5;--b:#25324D;--ok:#35C991;--bad:#ff6b7a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:Alfredo,"Iowan Old Style",Georgia,serif;font-weight:600;margin:0}
+#app{max-width:480px;margin:0 auto;min-height:100vh;padding:20px 18px 96px}
+.card{background:var(--bg2);border:1px solid var(--b);border-radius:18px;padding:16px;margin:12px 0}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:13px 18px;background:var(--p);color:#fff;transition:transform .1s,background .2s}
+button:active{transform:scale(.97)}button:hover{background:var(--a)}
+button.g{background:transparent;border:1px solid var(--b);color:var(--t)}button.g:hover{background:var(--bg2)}
+button.sm{padding:8px 12px;font-size:14px}button.w{width:100%}
+input,textarea,select{width:100%;font:inherit;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:12px;padding:12px;margin:6px 0 10px}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+label{color:var(--t2);font-size:14px}.mut{color:var(--t2);font-size:14px}.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav div{max-width:480px;margin:0 auto;display:flex}nav button{flex:1;background:none;border-radius:0;color:var(--t2);padding:12px 0;font-size:13px}
+nav button.on{color:var(--t);box-shadow:inset 0 2px 0 var(--a)}
+.badge{background:var(--p);border-radius:99px;padding:1px 8px;font-size:12px}
+.sms{background:#fff;color:#111;border-radius:16px;padding:14px;font-size:14px;white-space:pre-wrap}
+.warn{border-left:3px solid #e8b44a;background:#1d2336;padding:10px 12px;border-radius:8px;font-size:14px;color:var(--t2)}
+.bub{max-width:80%;padding:9px 13px;border-radius:16px;margin:5px 0;animation:in .2s}.me{background:var(--p);margin-left:auto}.th{background:var(--bg2);border:1px solid var(--b)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:10px 16px;z-index:9;max-width:90%}
+.splash{display:grid;place-items:center;min-height:70vh;text-align:center}.logo{animation:pop 1s ease both}@keyframes pop{from{opacity:0;transform:scale(.8)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div id="app"></div><div id="toast" hidden></div>
+<script>
+const LOGO=(s=64)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64" aria-label="Veylo"><path d="M12 14h40a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H34L20 58V48h-8a6 6 0 0 1-6-6V20a6 6 0 0 1 6-6z" fill="none" stroke="#F5F7FF" stroke-width="3.5" stroke-linejoin="round"/><path d="M20 26l12 14 12-14" fill="none" stroke="#6385FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COUNTRIES=[["+1","United States / Canada"],["+44","United Kingdom"],["+49","Germany"],["+33","France"],["+27","South Africa"],["+233","Ghana"],["+254","Kenya"],["+91","India"],["+61","Australia"],["+971","UAE"]];
+// In-memory DEMO state. Real build: Supabase Auth + Postgres (RLS) + Edge Functions.
+const S={user:null,tab:'home',view:'welcome',inbox:[],chats:[],sent:[],blocked:[],open:null,filter:'all',q:''};
+const words=['hidden','blue','midnight','quiet','silver'],w2=['voice','whisper','talker','echo','signal'];
+const rid=()=>words[Math.random()*5|0]+w2[Math.random()*5|0]+(10+Math.random()*89|0);
+function toast(m,bad){const t=$('#toast');t.textContent=m;t.style.borderColor=bad?'var(--bad)':'var(--ok)';t.hidden=false;clearTimeout(t._);t._=setTimeout(()=>t.hidden=true,3500)}
+function go(v,tab){S.view=v;if(tab)S.tab=tab;S.open=null;render()}
+function render(){const a=$('#app');a.innerHTML=(V[S.view]||V.welcome)();if(S.user&&['home','inbox','send','chats','profile','settings'].includes(S.view))a.innerHTML+=navbar();bind()}
+function navbar(){const items=[['home','Home','⌂'],['inbox','Inbox','✉'],['send','Send','➤'],['chats','Chats','💬'],['profile','Profile','☺']];return`<nav><div>${items.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-go="${k}" data-tab="${k}" aria-label="${l}">${i}<br>${l}</button>`).join('')}</div></nav>`}
+const unread=()=>S.inbox.filter(m=>!m.read&&m.status==='pending').length;
+function validPhone(cc,n){const d=n.replace(/[\s\-().]/g,'');if(!/^\d{6,12}$/.test(d))return'Enter digits only, 6–12 long.';if(cc==='+234'||d.startsWith('234'))return'Nigerian numbers (+234) are not supported.';return null}
+const V={
+welcome:()=>`<div class="splash"><div><div class="logo">${LOGO(96)}</div><h1 style="font-size:44px;margin-top:10px;letter-spacing:.04em">Veylo</h1><p style="font-size:20px;font-family:Georgia,serif">Say what you feel. Stay unknown.</p><p class="mut">Send an anonymous message to a phone number. If they're curious, the conversation continues privately inside Veylo.</p><button class="w" data-go="register">Get started</button><br><br><button class="w g" data-go="login">Log in</button></div></div>`,
+register:()=>`<h2>Create your account</h2><p class="mut">Veylo is for adults aged 18+.</p><form id="reg"><label>Username<input name="u" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+" placeholder="${rid()}"></label><label>Email<input name="e" type="email" required></label><label>Password<input name="p" type="password" required minlength="10"></label><label>Confirm password<input name="p2" type="password" required></label><label>Date of birth<input name="d" type="date" required></label><label class="row"><input type="checkbox" name="t" required style="width:auto"> I accept the Terms and Privacy Policy</label><button class="w">Create account</button></form><p class="mut">Already registered? <a href="#" data-go="login" style="color:var(--a)">Log in</a></p><div class="warn">Demo environment: no real account is created, no email or phone verification is sent. Google sign-in, email verification and 2FA need Supabase Auth.</div>`,
+login:()=>`<h2>Welcome back</h2><form id="log"><label>Email or username<input name="u" required></label><label>Password<input name="p" type="password" required></label><label class="row"><input type="checkbox" style="width:auto"> Remember me</label><button class="w">Log in</button></form><p class="mut"><a href="#" data-go="register" style="color:var(--a)">Create account</a> · <a href="#" id="forgot" style="color:var(--a)">Forgot password?</a></p>`,
+home:()=>`<div class="row sp"><div><span class="mut">Welcome back,</span><h2>${esc(S.user.name)}</h2></div><div>🔔 ${unread()?`<span class="badge">${unread()}</span>`:''}</div></div>
+<div class="row"><div class="card" style="flex:1"><h3>${unread()}</h3><span class="mut">Unread</span></div><div class="card" style="flex:1"><h3>${S.chats.length}</h3><span class="mut">Conversations</span></div></div>
+<button class="w" data-go="send" data-tab="send">Send anonymous message</button>
+<h3 style="margin-top:22px">Recent activity</h3>${S.sent.length?S.sent.slice(-3).reverse().map(s=>`<div class="card"><b>${esc(s.to)}</b><div class="mut">${esc(s.status)}</div></div>`).join(''):`<div class="card mut">Nothing yet. Your first message starts here.</div>`}
+<div class="card"><b>Try the recipient side</b><p class="mut">Simulates an invitation arriving in your inbox so you can test accept, decline, block and report.</p><button class="g sm" id="sim">Simulate incoming invitation</button></div>`,
+send:()=>`<h2>Send anonymously</h2><form id="snd"><label>Country<select name="c">${COUNTRIES.map(([c,n])=>`<option value="${c}">${n} (${c})</option>`).join('')}</select></label><label>Phone number<input name="n" inputmode="tel" required placeholder="Number without country code"></label><label>Your message<textarea name="m" id="msg" rows="4" maxlength="320" required></textarea></label><div class="mut" id="cnt">0 / 320 · 0 SMS segment(s)</div><label>Message expiry in Veylo<select name="x"><option>24 hours</option><option>7 days</option><option selected>Never expire</option></select></label><div class="mut">Expiry cannot erase the SMS already delivered to a phone.</div><h3 style="margin-top:14px">SMS preview</h3><div class="sms" id="prev"></div><br><button class="w">Send anonymously</button></form>`,
+inbox:()=>{const L=S.inbox.filter(m=>(S.filter==='all'?m.status!=='archived':S.filter==='unread'?!m.read&&m.status==='pending':m.status==='archived')&&m.text.toLowerCase().includes(S.q.toLowerCase()));
+if(S.open!==null){const m=S.inbox[S.open];return`<button class="g sm" data-go="inbox">← Back</button><div class="card"><b>${esc(m.from)}</b> <span class="mut">${m.time}</span><p>${esc(m.text)}</p>${m.status==='pending'?`<div class="row"><button class="sm" id="rep">Reply</button><button class="sm g" id="dec">Decline</button></div><br><div class="row"><button class="sm g" id="blk">Block sender</button><button class="sm g" id="rpt">Report</button></div>`:`<span class="mut">Status: ${m.status}</span>`}</div><div id="rb"></div>`}
+return`<h2>Inbox</h2><input id="q" placeholder="Search messages" value="${esc(S.q)}"><div class="row">${['all','unread','archived'].map(f=>`<button class="sm ${S.filter===f?'':'g'}" data-f="${f}">${f}</button>`).join('')}</div>${L.length?L.map(m=>`<div class="card" data-open="${S.inbox.indexOf(m)}" style="cursor:pointer"><div class="row sp"><b>${esc(m.from)}</b><span class="mut">${m.time}</span></div><div class="mut">${esc(m.text.slice(0,70))}</div>${m.read?'':'<span class="badge">new</span> '}<span class="mut">${m.status}</span></div>`).join(''):`<div class="card" style="text-align:center"><h3>No messages yet.</h3><p class="mut">Your inbox is quiet for now. Your next conversation could be around the corner.</p></div>`}`},
+chats:()=>{if(S.open!==null){const c=S.chats[S.open];return`<button class="g sm" data-go="chats">← Back</button><h3>${esc(c.with)}</h3><div class="mut">Phone numbers and emails are never shown here.</div><div id="ms">${c.msgs.map(m=>`<div class="bub ${m.me?'me':'th'}">${esc(m.t)}</div>`).join('')}</div><form id="cf" class="row"><input name="t" required placeholder="Message" autocomplete="off" style="margin:0"><button>Send</button></form><br><button class="g sm" id="arc">Archive</button> <button class="g sm" id="del">Delete</button>`}
+return`<h2>Chats</h2>${S.chats.length?S.chats.map((c,i)=>`<div class="card" data-open="${i}" style="cursor:pointer"><b>${esc(c.with)}</b><div class="mut">${esc(c.msgs.at(-1).t)}</div></div>`).join(''):`<div class="card" style="text-align:center"><h3>No chats yet</h3><p class="mut">Accept and reply to an invitation, and the conversation appears here.</p></div>`}`},
+profile:()=>`<div class="card" style="text-align:center">${LOGO(56)}<h2>${esc(S.user.name)}</h2><div class="mut">Veylo ID: ${S.user.vid}</div><div class="mut">Member since ${S.user.since} · ${S.chats.length} conversations</div></div><form id="pf"><label>Display username<input name="u" value="${esc(S.user.name)}" minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+"></label><button class="w">Save username</button></form><br><button class="w g" data-go="settings">Settings</button>`,
+settings:()=>`<button class="g sm" data-go="profile" data-tab="profile">← Back</button><h2>Settings</h2><div class="card"><b>Blocked users</b><div class="mut">${S.blocked.length?S.blocked.map(esc).join(', '):'None'}</div></div><div class="card"><b>Security</b><p class="mut">Password change, 2FA, active sessions and login activity require Supabase Auth and are not available in this demo.</p></div><div class="card"><b>Legal</b><p class="mut">Policy drafts must be prepared and reviewed by a lawyer before launch.</p></div><button class="w g" id="out">Log out</button><br><br><button class="w" id="delacct" style="background:var(--bad)">Delete account</button>`};
+function bind(){document.querySelectorAll('[data-go]').forEach(e=>e.onclick=ev=>{ev.preventDefault();go(e.dataset.go,e.dataset.tab)});
+document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>{S.open=+e.dataset.open;if(S.view==='inbox')S.inbox[S.open].read=true;render()});
+document.querySelectorAll('[data-f]').forEach(e=>e.onclick=()=>{S.filter=e.dataset.f;render()});
+const f=(id,fn)=>{const e=$(id);if(e)e.onsubmit=ev=>{ev.preventDefault();fn(Object.fromEntries(new FormData(e)))}},c=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
+f('#reg',d=>{if(d.p!==d.p2)return toast('Passwords do not match.',1);const age=(Date.now()-new Date(d.d))/31557600000;if(!(age>=18))return toast('You must be 18 or older.',1);S.user={name:d.u,vid:'VY-'+(1000+Math.random()*9000|0),since:new Date().toLocaleDateString()};go('home','home')});
+f('#log',d=>{S.user={name:d.u.split('@')[0],vid:'VY-'+(1000+Math.random()*9000|0),since:new Date().toLocaleDateString()};go('home','home')});
+c('#forgot',e=>{e.preventDefault();toast('Password reset email needs Supabase Auth. Nothing was sent.',1)});
+c('#sim',()=>{S.inbox.unshift({from:rid(),text:'I\'ve admired your work for a long time. Would you like to talk?',time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),read:false,status:'pending'});toast('Simulated invitation added to Inbox.');render()});
+const mg=$('#msg');if(mg){const up=()=>{const v=mg.value;$('#cnt').textContent=`${v.length} / 320 · ${Math.max(1,Math.ceil(v.length/160))} SMS segment(s)`;$('#prev').textContent=`VEYLO\n\nYou've received an anonymous message:\n\n"${v||'…'}"\n\nInterested? Continue your conversation securely on Veylo.\n\nhttps://veylo.example/i/<unique-token>\n\nVEYLO SECURITY NOTICE\nYour personal details are not shared with the person messaging you. Veylo will never request your password or verification code through an SMS link.\n\nReply STOP to opt out.`};mg.oninput=up;up()}
+f('#snd',d=>{const err=validPhone(d.c,d.n);if(err)return toast(err,1);if(S.blocked.includes(d.c+d.n))return toast('This recipient has opted out.',1);S.sent.push({to:d.c+' ••• '+d.n.slice(-3),status:'Not sent: SMS provider not configured'});toast('Not sent. No SMS provider is connected in this demo, so no message was delivered.',1)});
+const m=()=>S.inbox[S.open];
+c('#dec',()=>{m().status='declined';toast('Declined. No conversation was created.');go('inbox')});
+c('#blk',()=>{S.blocked.push(m().from);m().status='blocked';toast('Sender blocked.');go('inbox')});
+c('#rpt',()=>{m().status='reported';toast('Reported for review.');go('inbox')});
+c('#rep',()=>{$('#rb').innerHTML='<form id="rf" class="row"><input name="t" required placeholder="Your reply" style="margin:0"><button>Send</button></form>';f('#rf',d=>{m().status='accepted';S.chats.push({with:m().from,msgs:[{t:m().text,me:false},{t:d.t,me:true}]});toast('Conversation started.');go('chats','chats')})});
+f('#cf',d=>{const ch=S.chats[S.open];ch.msgs.push({t:d.t,me:true});render();setTimeout(()=>{ch.msgs.push({t:'(demo) Simulated reply. Real-time chat needs Supabase Realtime.',me:false});if(S.view==='chats'&&S.chats[S.open]===ch)render()},900)});
+c('#arc',()=>{toast('Archived.');go('chats')});c('#del',()=>{S.chats.splice(S.open,1);toast('Conversation deleted.');go('chats')});
+f('#pf',d=>{S.user.name=d.u;toast('Username saved.');render()});
+const q=$('#q');if(q)q.oninput=()=>{S.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+c('#out',()=>{S.user=null;go('welcome')});c('#delacct',()=>{if(confirm('Delete your account and all conversations?')){Object.assign(S,{user:null,inbox:[],chats:[],sent:[],blocked:[]});go('welcome')}})}
+render();
+</script></body></html>
